@@ -2,3 +2,7 @@ steps:
   - name: python:3.11
     entrypoint: python
     args: ["app/main.py"]
+
+
+options:
+  logging: CLOUD_LOGGING_ONLY
