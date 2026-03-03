@@ -1,0 +1,4 @@
+steps:
+  - name: python:3.11
+    entrypoint: python
+    args: ["app/main.py]
