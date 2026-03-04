@@ -1,8 +1,17 @@
 steps:
-  - name: python:3.11
-    entrypoint: python
-    args: ["app/main.py"]
+  # 1) Show where we are and what files exist
+  - id: "List repo contents"
+    name: gcr.io/cloud-builders/gcloud
+    entrypoint: bash
+    args: ["-lc", "echo 'PWD:' $(pwd); echo 'Tree:'; ls -R"]
 
+  # 2) Show Python version and run the script with unbuffered output
+  - id: "Run Python hello"
+    name: python:3.11
+    entrypoint: python
+    args:
+      - "-u"           # unbuffered stdout/stderr so prints show immediately
+      - "app/main.py"  # path to your file relative to repo root
 
 options:
   logging: CLOUD_LOGGING_ONLY
