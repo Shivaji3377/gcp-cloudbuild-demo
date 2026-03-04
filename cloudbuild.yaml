@@ -1,17 +1,47 @@
+# Cloud Build config: installs Python deps, then runs a script that
+# impersonates storage-access-sa to access GCS.
+# Make sure your trigger runs as: 101494637547-compute@developer.gserviceaccount.com
+# And that this SA has:
+#   - roles/logging.logWriter   (project)
+#   - roles/iam.serviceAccountTokenCreator on the target SA (already granted)
+#
+# Also ensure the target SA has the correct bucket-level role, e.g.:
+#   - roles/storage.objectViewer on gs://awb-demo-bucket-3377
+
+substitutions:
+  _TARGET_SA_EMAIL: "storage-access-sa@impersonation-test-489114.iam.gserviceaccount.com"
+  _BUCKET_NAME: "awb-demo-bucket-3377"   # <-- change to your bucket
+
 steps:
-  # 1) Show where we are and what files exist
+  # Optional: show repo contents for easy troubleshooting
   - id: "List repo contents"
     name: gcr.io/cloud-builders/gcloud
     entrypoint: bash
-    args: ["-lc", "echo 'PWD:' $(pwd); echo 'Tree:'; ls -R"]
+    args: ["-lc", "echo 'PWD:' $(pwd); echo '--- TREE ---'; ls -R"]
 
-  # 2) Show Python version and run the script with unbuffered output
-  - id: "Run Python hello"
+  # Install dependencies into a local vendor dir preserved across steps
+  - id: "Install deps"
     name: python:3.11
-    entrypoint: python
+    entrypoint: bash
     args:
-      - "-u"           # unbuffered stdout/stderr so prints show immediately
-      - "app/main.py"  # path to your file relative to repo root
+      - -lc
+      - |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt -t ./vendor
+
+  # Run the Python app with unbuffered output so prints show immediately
+  - id: "Run app (impersonation -> GCS)"
+    name: python:3.11
+    entrypoint: bash
+    env:
+      - "PYTHONPATH=./vendor:."
+      - "TARGET_SA_EMAIL=${_TARGET_SA_EMAIL}"
+      - "BUCKET_NAME=${_BUCKET_NAME}"
+    args:
+      - -lc
+      - |
+        python -u app/main.py
 
 options:
   logging: CLOUD_LOGGING_ONLY
+``
