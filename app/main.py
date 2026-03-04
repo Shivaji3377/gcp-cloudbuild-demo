@@ -53,4 +53,4 @@ if __name__ == "__main__":
     except Exception as e:
         err(f"Impersonation or GCS call failed: {e}")
         sys.exit(1)
-``
+
